@@ -95,9 +95,13 @@ public class SwaggerBackend implements Backend {
     }
 
     private void appendHeader() {
+        String basePath = options.getBasePath() != null && !"".equals(options.getBasePath()) ? 
+            options.getBasePath() :
+            (options.getDomain() != null && !"".equals(options.getDomain().trim()) ? '/' : '/' + projectName + '/') + resources.getBasePath();
         builder.add("swagger", SWAGGER_VERSION).add("info", Json.createObjectBuilder()
                 .add("version", projectVersion).add("title", projectName))
-                .add("host", options.getDomain() == null ? "" : options.getDomain()).add("basePath", (options.getDomain() != null && !"".equals(options.getDomain().trim()) ? '/' : '/' + projectName + '/') + resources.getBasePath())
+                .add("host", options.getDomain() == null ? "" : options.getDomain())
+                .add("basePath", basePath)
                 .add("schemes", options.getSchemes().stream().map(Enum::name).map(String::toLowerCase).sorted()
                         .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build());
         if (options.isRenderTags()) {

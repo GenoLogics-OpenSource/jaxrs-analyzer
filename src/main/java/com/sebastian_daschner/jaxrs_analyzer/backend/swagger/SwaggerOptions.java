@@ -20,12 +20,14 @@ import java.util.stream.Stream;
 public class SwaggerOptions {
 
     public static final String DOMAIN = "domain";
+    public static final String BASE_PATH = "basePath";
     public static final String SWAGGER_SCHEMES = "swaggerSchemes";
     public static final String RENDER_SWAGGER_TAGS = "renderSwaggerTags";
     public static final String SWAGGER_TAGS_PATH_OFFSET = "swaggerTagsPathOffset";
     public static final String JSON_PATCH = "jsonPatch";
 
     private static final String DEFAULT_DOMAIN = "";
+    private static final String DEFAULT_BASE_PATH = "";
     private static final Set<SwaggerScheme> DEFAULT_SCHEMES = EnumSet.of(SwaggerScheme.HTTP);
     private static final boolean DEFAULT_RENDER_TAGS = false;
     private static final int DEFAULT_TAGS_PATH_OFFSET = 0;
@@ -34,6 +36,8 @@ public class SwaggerOptions {
      * The deployed domain of the project.
      */
     private String domain = DEFAULT_DOMAIN;
+    
+    private String basePath = DEFAULT_BASE_PATH; 
 
     /**
      * The transfer protocol (https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#swaggerSchemes) of the project.
@@ -58,6 +62,10 @@ public class SwaggerOptions {
 
     String getDomain() {
         return domain;
+    }
+    
+    String getBasePath() {
+        return basePath;
     }
 
     Set<SwaggerScheme> getSchemes() {
@@ -90,6 +98,10 @@ public class SwaggerOptions {
 
         if (config.containsKey(DOMAIN)) {
             domain = config.get(DOMAIN);
+        }
+        
+        if (config.containsKey(BASE_PATH)) {
+            basePath = config.get(BASE_PATH);
         }
 
         if (config.containsKey(SWAGGER_SCHEMES)) {
