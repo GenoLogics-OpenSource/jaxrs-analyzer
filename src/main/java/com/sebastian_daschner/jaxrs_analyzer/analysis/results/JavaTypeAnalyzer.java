@@ -19,13 +19,16 @@ package com.sebastian_daschner.jaxrs_analyzer.analysis.results;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.sebastian_daschner.jaxrs_analyzer.model.Types;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypedMetadata;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeIdentifier;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.XMLMetadata;
 import com.sebastian_daschner.jaxrs_analyzer.utils.Pair;
 import org.objectweb.asm.Type;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.lang.reflect.*;
@@ -93,10 +96,11 @@ class JavaTypeAnalyzer {
         if (loadedClass != null && loadedClass.isEnum())
             return TypeRepresentation.ofEnum(identifier, Stream.of(loadedClass.getEnumConstants()).map(o -> (Enum<?>) o).map(Enum::name).toArray(String[]::new));
 
-        return TypeRepresentation.ofConcrete(identifier, analyzeClass(type, loadedClass));
+        XMLMetadata typeXmlMetadata = XMLMetadata.extract(loadedClass);
+        return TypeRepresentation.ofConcrete(identifier, typeXmlMetadata, analyzeClass(type, loadedClass));
     }
 
-    private Map<String, TypeIdentifier> analyzeClass(final String type, final Class<?> clazz) {
+    private Map<String, TypedMetadata> analyzeClass(final String type, final Class<?> clazz) {
         if (clazz == null || isJDKType(type))
             return Collections.emptyMap();
 
@@ -107,15 +111,16 @@ class JavaTypeAnalyzer {
         final List<Field> relevantFields = Stream.of(clazz.getDeclaredFields()).filter(f -> isRelevant(f, value)).collect(Collectors.toList());
         final List<Method> relevantGetters = Stream.of(clazz.getDeclaredMethods()).filter(m -> isRelevant(m, value)).collect(Collectors.toList());
 
-        final Map<String, TypeIdentifier> properties = new HashMap<>();
+        // order matters
+        final Map<String, TypedMetadata> properties = new LinkedHashMap<>();
 
         final Stream<Class<?>> allSuperTypes = Stream.concat(Stream.of(clazz.getInterfaces()), Stream.of(clazz.getSuperclass()));
         allSuperTypes.filter(Objects::nonNull).map(Type::getDescriptor).map(t -> analyzeClass(t, loadClassFromType(t))).forEach(properties::putAll);
 
         Stream.concat(relevantFields.stream().map(f -> mapField(f, type)), relevantGetters.stream().map(g -> mapGetter(g, type)))
                 .filter(Objects::nonNull).forEach(p -> {
-            properties.put(p.getLeft(), TypeIdentifier.ofType(p.getRight()));
-            analyze(p.getRight());
+            properties.put(p.getLeft(), p.getRight());
+            analyze(p.getRight().getTypeIdentifier().getType());
         });
 
         return properties;
@@ -219,20 +224,21 @@ class JavaTypeAnalyzer {
         return name.startsWith("is") && name.length() > 2 && method.getReturnType() == boolean.class;
     }
 
-    private static Pair<String, String> mapField(final Field field, final String containedType) {
+    private static Pair<String, TypedMetadata> mapField(final Field field, final String containedType) {
         final String type = getFieldDescriptor(field, containedType);
         if (type == null)
             return null;
-
-        return Pair.of(field.getName(), type);
+        
+        return Pair.of(field.getName(), new TypedMetadata(TypeIdentifier.ofType(type), XMLMetadata.extract(field)));
     }
 
-    private static Pair<String, String> mapGetter(final Method method, final String containedType) {
+    private static Pair<String, TypedMetadata> mapGetter(final Method method, final String containedType) {
         final String returnType = getReturnType(getMethodSignature(method), containedType);
         if (returnType == null)
             return null;
 
-        return Pair.of(extractPropertyName(method.getName()), returnType);
+        XMLMetadata xmlMetadata = XMLMetadata.extract(method);
+        
+        return Pair.of(extractPropertyName(method.getName()), new TypedMetadata(TypeIdentifier.ofType(returnType), xmlMetadata));
     }
-
 }

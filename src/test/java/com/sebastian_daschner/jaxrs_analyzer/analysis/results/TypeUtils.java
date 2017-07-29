@@ -3,6 +3,7 @@ package com.sebastian_daschner.jaxrs_analyzer.analysis.results;
 import com.sebastian_daschner.jaxrs_analyzer.model.Types;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeIdentifier;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation.ConcreteTypeRepresentation;
 
 public final class TypeUtils {
 
@@ -45,7 +46,22 @@ public final class TypeUtils {
             return firstEnumRep.getEnumValues().equals(secondEnumRep.getEnumValues()) && firstEnumRep.getComponentType().equals(secondEnumRep.getComponentType());
         }
 
-        return ((TypeRepresentation.ConcreteTypeRepresentation) first).contentEquals(((TypeRepresentation.ConcreteTypeRepresentation) second).getProperties());
+        final ConcreteTypeRepresentation firstConcrete = (TypeRepresentation.ConcreteTypeRepresentation) first;
+        final ConcreteTypeRepresentation secondConcrete = (TypeRepresentation.ConcreteTypeRepresentation) second;
+        return firstConcrete.contentEquals(secondConcrete.getProperties());
+    }
+    
+    public static boolean metadataEquals(TypeRepresentation first, TypeRepresentation second) {
+        if (first instanceof ConcreteTypeRepresentation && second instanceof ConcreteTypeRepresentation) {
+            final ConcreteTypeRepresentation firstConcrete = (TypeRepresentation.ConcreteTypeRepresentation) first;
+            final ConcreteTypeRepresentation secondConcrete = (TypeRepresentation.ConcreteTypeRepresentation) second;
+            if (firstConcrete.getTypeXmlMetadata() == null ^ secondConcrete.getTypeXmlMetadata() == null) 
+                return false;
+            if (firstConcrete.getTypeXmlMetadata() != null && !firstConcrete.getTypeXmlMetadata().equals(secondConcrete.getTypeXmlMetadata()))
+                return false;
+            return firstConcrete.propertyMetadataEquals(secondConcrete.getAllPropertyXmlMetadata());
+        }
+        return !(first instanceof ConcreteTypeRepresentation || second instanceof ConcreteTypeRepresentation);
     }
 
 }

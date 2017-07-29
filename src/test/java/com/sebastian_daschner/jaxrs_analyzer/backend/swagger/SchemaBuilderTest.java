@@ -1,8 +1,11 @@
 package com.sebastian_daschner.jaxrs_analyzer.backend.swagger;
 
 import com.sebastian_daschner.jaxrs_analyzer.model.Types;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypedMetadata;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeIdentifier;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.XMLMetadata;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -225,6 +228,62 @@ public class SchemaBuilderTest {
                 .build()));
     }
 
+    @Test
+    public void testXmlObject() {
+        representations.put(INT_LIST_IDENTIFIER, TypeRepresentation.ofCollection(INTEGER_IDENTIFIER, TypeRepresentation.ofConcrete(INTEGER_IDENTIFIER)));
+
+        final TypeIdentifier modelIdentifier = TypeIdentifier.ofType(MODEL_IDENTIFIER.getType());
+        final Map<String, TypedMetadata> modelProperties = new HashMap<>();
+
+        XMLMetadata string1XmlMetadata = new XMLMetadata("http://foo.bar/test", "test", false, "tst");
+        modelProperties.put("string1", new TypedMetadata(TypeIdentifier.ofType(Types.STRING), string1XmlMetadata));
+
+        modelProperties.put("string2", new TypedMetadata(TypeIdentifier.ofType(Types.STRING), null));
+
+        XMLMetadata string3XmlMetadata = new XMLMetadata("http://foo.bar/test3", null, true, null);
+        modelProperties.put("string3", new TypedMetadata(TypeIdentifier.ofType(Types.STRING), string3XmlMetadata));
+        
+        XMLMetadata typeXmlMetadata = new XMLMetadata("http://foo.bar/default", null);
+        representations.put(modelIdentifier, TypeRepresentation.ofConcrete(modelIdentifier, typeXmlMetadata , modelProperties));
+
+        cut = new SchemaBuilder(representations);
+        assertThat(cut.build(modelIdentifier).build(), is(Json.createObjectBuilder().add("$ref", "#/definitions/Model").build()));
+
+        final JsonObject definitions = cut.getDefinitions();
+        assertThat(definitions, is(Json.createObjectBuilder()
+                .add("Model", Json.createObjectBuilder()
+                        .add("properties", Json.createObjectBuilder()
+                                .add("string1", Json.createObjectBuilder()
+                                        .add("type", "string")
+                                        .add("xml", Json.createObjectBuilder()
+                                                .add("name", string1XmlMetadata.getName())
+                                                .add("namespace", string1XmlMetadata.getNamespace())
+                                                .add("prefix", string1XmlMetadata.getPrefix())
+                                        .build())
+                                .build())
+                                .add("string2", Json.createObjectBuilder()
+                                        .add("type", "string")
+                                        .add("xml", Json.createObjectBuilder()
+                                                // defined at the class level
+                                                .add("namespace", typeXmlMetadata.getNamespace())
+                                        .build())
+                                .build())
+                                .add("string3", Json.createObjectBuilder()
+                                        .add("type", "string")
+                                        .add("xml", Json.createObjectBuilder()
+                                                .add("namespace", string3XmlMetadata.getNamespace())
+                                                .add("attribute", string3XmlMetadata.isAttribute())
+                                        .build())
+                                .build())
+                        .build())
+                        .add("xml", Json.createObjectBuilder()
+                                .add("namespace", typeXmlMetadata.getNamespace())
+                        .build())
+                .build())
+        .build()));
+    }
+    
+    
     private static JsonObject type(final String type) {
         return Json.createObjectBuilder().add("type", type).build();
     }

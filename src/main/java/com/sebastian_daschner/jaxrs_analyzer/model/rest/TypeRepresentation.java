@@ -17,6 +17,7 @@
 package com.sebastian_daschner.jaxrs_analyzer.model.rest;
 
 import com.sebastian_daschner.jaxrs_analyzer.model.Types;
+import com.sebastian_daschner.jaxrs_analyzer.utils.Pair;
 
 import java.util.*;
 
@@ -82,6 +83,10 @@ public abstract class TypeRepresentation {
     public static TypeRepresentation ofConcrete(final TypeIdentifier identifier, final Map<String, TypeIdentifier> properties) {
         return new ConcreteTypeRepresentation(identifier, properties);
     }
+    
+    public static TypeRepresentation ofConcrete(final TypeIdentifier identifier, final XMLMetadata typeXmlMetadata, final Map<String, TypedMetadata> properties) {
+        return new ConcreteTypeRepresentation(identifier, typeXmlMetadata, properties);
+    }
 
     /**
      * Creates a type representation of a collection type (i.e. anything assignable to {@link java.util.Collection} or an array) which contains an actual representation.
@@ -110,14 +115,40 @@ public abstract class TypeRepresentation {
     public static class ConcreteTypeRepresentation extends TypeRepresentation {
 
         private final Map<String, TypeIdentifier> properties;
+        
+        private final Map<String, XMLMetadata> allPropertyXmlMetadata;
+
+        private XMLMetadata typeXmlMetadata;
 
         private ConcreteTypeRepresentation(final TypeIdentifier identifier, final Map<String, TypeIdentifier> properties) {
             super(identifier);
             this.properties = properties;
+            this.allPropertyXmlMetadata = Collections.emptyMap();
         }
 
+        private ConcreteTypeRepresentation(final TypeIdentifier identifier, final XMLMetadata typeXmlMetadata, final Map<String, TypedMetadata> properties) {
+            super(identifier);
+            this.typeXmlMetadata = typeXmlMetadata; 
+            this.properties = new LinkedHashMap<>();
+            this.allPropertyXmlMetadata = new LinkedHashMap<>();
+            properties.forEach((name, info) -> {
+                this.properties.put(name, info.getTypeIdentifier());
+                if (info.getXmlMetadata() != null) {
+                    this.allPropertyXmlMetadata.put(name, info.getXmlMetadata());
+                }
+            });
+        }
+        
         public Map<String, TypeIdentifier> getProperties() {
             return properties;
+        }
+        
+        public XMLMetadata getPropertyXmlMetadata(String propertyName) {
+            return allPropertyXmlMetadata.get(propertyName);
+        }
+        
+        public XMLMetadata getTypeXmlMetadata() {
+            return typeXmlMetadata;
         }
 
         @Override
@@ -139,6 +170,10 @@ public abstract class TypeRepresentation {
         public boolean contentEquals(final Map<String, TypeIdentifier> properties) {
             return this.properties.equals(properties);
         }
+        
+        public boolean propertyMetadataEquals(final Map<String, XMLMetadata> propertyXmlMetadata) {
+            return this.allPropertyXmlMetadata.equals(propertyXmlMetadata);
+        }
 
         @Override
         public String toString() {
@@ -146,6 +181,10 @@ public abstract class TypeRepresentation {
                     "identifier=" + getIdentifier() +
                     ",properties=" + properties +
                     '}';
+        }
+
+        public Map<String, XMLMetadata> getAllPropertyXmlMetadata() {
+            return allPropertyXmlMetadata;
         }
     }
 

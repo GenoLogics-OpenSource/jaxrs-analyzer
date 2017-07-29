@@ -94,6 +94,9 @@ public class JavaTypeAnalyzerTest {
             final TypeRepresentation ac = actualTypeRepresentations.get(ex.getIdentifier());
             if (!TypeUtils.equals(ex, ac))
                 fail("failed for " + testClassSimpleName + "\nNo type representation match \nexpected: " + ex + "\nactual:   " + ac);
+            if (!TypeUtils.metadataEquals(ex, ac))
+                fail("failed for " + testClassSimpleName + "\nNo metadata representation match \nexpected: " + ex + "\nactual:   " + ac);
+            
         });
     }
 

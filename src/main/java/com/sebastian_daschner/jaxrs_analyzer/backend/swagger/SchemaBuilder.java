@@ -16,20 +16,27 @@
 
 package com.sebastian_daschner.jaxrs_analyzer.backend.swagger;
 
-import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeIdentifier;
-import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation;
-import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentationVisitor;
-import com.sebastian_daschner.jaxrs_analyzer.utils.Pair;
+import static com.sebastian_daschner.jaxrs_analyzer.backend.ComparatorUtils.mapKeyComparator;
+import static com.sebastian_daschner.jaxrs_analyzer.model.Types.BOOLEAN;
+import static com.sebastian_daschner.jaxrs_analyzer.model.Types.DOUBLE_TYPES;
+import static com.sebastian_daschner.jaxrs_analyzer.model.Types.INTEGER_TYPES;
+import static com.sebastian_daschner.jaxrs_analyzer.model.Types.PRIMITIVE_BOOLEAN;
+import static com.sebastian_daschner.jaxrs_analyzer.model.Types.STRING;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import java.util.HashMap;
-import java.util.Map;
 
-import static com.sebastian_daschner.jaxrs_analyzer.backend.ComparatorUtils.mapKeyComparator;
-import static com.sebastian_daschner.jaxrs_analyzer.model.Types.*;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeIdentifier;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation.ConcreteTypeRepresentation;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentationVisitor;
+import com.sebastian_daschner.jaxrs_analyzer.model.rest.XMLMetadata;
+import com.sebastian_daschner.jaxrs_analyzer.utils.Pair;
 
 /**
  * Creates Swagger schema type definitions.
@@ -61,18 +68,16 @@ class SchemaBuilder {
      */
     JsonObjectBuilder build(final TypeIdentifier identifier) {
         final SwaggerType type = toSwaggerType(identifier.getType());
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
         switch (type) {
             case BOOLEAN:
             case INTEGER:
             case NUMBER:
             case NULL:
             case STRING:
-                final JsonObjectBuilder builder = Json.createObjectBuilder();
                 addPrimitive(builder, type);
                 return builder;
         }
-
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
 
         final TypeRepresentationVisitor visitor = new TypeRepresentationVisitor() {
 
@@ -135,10 +140,11 @@ class SchemaBuilder {
                 return;
         }
 
-        addObject(builder, representation.getIdentifier(), representation.getProperties());
+        addObject(builder, representation);
     }
 
-    private void addObject(final JsonObjectBuilder builder, final TypeIdentifier identifier, final Map<String, TypeIdentifier> properties) {
+    private void addObject(final JsonObjectBuilder builder, final ConcreteTypeRepresentation typeRepresentation) {
+        TypeIdentifier identifier = typeRepresentation.getIdentifier();
         final String definition = buildDefinition(identifier.getName());
 
         if (jsonDefinitions.containsKey(definition)) {
@@ -149,16 +155,64 @@ class SchemaBuilder {
         // reserve definition
         jsonDefinitions.put(definition, Pair.of(identifier.getName(), Json.createObjectBuilder().build()));
 
+        final JsonObjectBuilder definitionBuilder = Json.createObjectBuilder();
+        
         final JsonObjectBuilder nestedBuilder = Json.createObjectBuilder();
 
-        properties.entrySet().stream().sorted(mapKeyComparator()).forEach(e -> nestedBuilder.add(e.getKey(), build(e.getValue())));
-        jsonDefinitions.put(definition, Pair.of(identifier.getName(), Json.createObjectBuilder().add("properties", nestedBuilder).build()));
+        Map<String, TypeIdentifier> properties = typeRepresentation.getProperties();
+        final XMLMetadata typeXmlMetadata = typeRepresentation.getTypeXmlMetadata();
+        properties.entrySet().stream().forEach(e -> {
+            final String propertyName = e.getKey();
+            final TypeIdentifier propertyTypeIdentifier = e.getValue();
+            final JsonObjectBuilder propertyBuilder = build(propertyTypeIdentifier);
+            XMLMetadata propertyXmlMetadata = typeRepresentation.getPropertyXmlMetadata(propertyName);
+            renderXmlMetadata(propertyBuilder, typeXmlMetadata, propertyXmlMetadata);
+            nestedBuilder.add(propertyName, propertyBuilder);   
+        });
+        definitionBuilder.add("properties", nestedBuilder.build());
+        renderXmlMetadata(definitionBuilder, typeXmlMetadata, null);
+        jsonDefinitions.put(definition, Pair.of(identifier.getName(), definitionBuilder.build()));
 
         builder.add("$ref", "#/definitions/" + definition);
     }
 
     private void addPrimitive(final JsonObjectBuilder builder, final SwaggerType type) {
         builder.add("type", type.toString());
+    }
+    
+    private void renderXmlMetadata(JsonObjectBuilder builder, XMLMetadata typeXmlMetadata, XMLMetadata propertyXmlMetadata) {
+        final JsonObjectBuilder xmlObjectBuilder = Json.createObjectBuilder();
+        String namespace = null;
+        String prefix = null;
+        String name = null;
+        Boolean attribute = null;
+        
+        if (typeXmlMetadata != null) {
+            namespace = typeXmlMetadata.getNamespace();
+            name = typeXmlMetadata.getName();
+            prefix = typeXmlMetadata.getPrefix();
+        }
+        if (propertyXmlMetadata != null) {
+            if (propertyXmlMetadata.getNamespace() != null)
+                namespace = propertyXmlMetadata.getNamespace();
+            if (propertyXmlMetadata.getName() != null)
+                name = propertyXmlMetadata.getName();
+            if (propertyXmlMetadata.isAttribute())
+                attribute = true;
+            if (propertyXmlMetadata.getPrefix() != null)
+                prefix = propertyXmlMetadata.getPrefix();
+        }
+        if (namespace != null || prefix != null || name != null || attribute != null) {
+            if (namespace != null)
+                xmlObjectBuilder.add("namespace", namespace);
+            if (name != null)
+                xmlObjectBuilder.add("name", name);
+            if (prefix != null)
+                xmlObjectBuilder.add("prefix", prefix);
+            if (attribute != null)
+                xmlObjectBuilder.add("attribute", attribute);
+            builder.add("xml", xmlObjectBuilder.build());
+        }
     }
 
     private String buildDefinition(final String typeName) {
