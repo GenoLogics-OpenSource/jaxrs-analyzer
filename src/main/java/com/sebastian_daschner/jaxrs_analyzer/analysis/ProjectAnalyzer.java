@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -93,7 +94,7 @@ public class ProjectAnalyzer {
 
             // analyze relevant classes
             final JobRegistry jobRegistry = JobRegistry.getInstance();
-            final Set<ClassResult> classResults = new HashSet<>();
+            final Set<ClassResult> classResults = new LinkedHashSet<>();
 
             classes.stream().filter(this::isJAXRSRootResource).forEach(c -> jobRegistry.analyzeResourceClass(c, new ClassResult()));
 

@@ -37,7 +37,7 @@ class JsonRepresentationAppender implements TypeRepresentationVisitor {
         else {
             builder.append('{');
             visitedTypes.add(representation.getIdentifier());
-            representation.getProperties().entrySet().stream().sorted(mapKeyComparator()).forEach(e -> {
+            representation.getProperties().entrySet().stream().forEach(e -> {
                 builder.append('"').append(e.getKey()).append("\":");
                 final TypeRepresentation nestedRepresentation = representations.get(e.getValue());
                 if (nestedRepresentation == null)

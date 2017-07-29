@@ -1,17 +1,19 @@
 package com.sebastian_daschner.jaxrs_analyzer.backend;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import com.sebastian_daschner.jaxrs_analyzer.model.Types;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeIdentifier;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentation;
 import com.sebastian_daschner.jaxrs_analyzer.model.rest.TypeRepresentationVisitor;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 public class JsonRepresentationAppenderTest {
 
@@ -25,7 +27,7 @@ public class JsonRepresentationAppenderTest {
 
     @Before
     public void setup() {
-        representations = new HashMap<>();
+        representations = new LinkedHashMap<>();
         builder = new StringBuilder();
         cut = new JsonRepresentationAppender(builder, representations);
     }
@@ -109,11 +111,11 @@ public class JsonRepresentationAppenderTest {
     public void testVisitConcrete() {
         final TypeIdentifier identifier = TypeIdentifier.ofType("com.sebastian_daschner.test.Model");
         final TypeIdentifier enumIdentifier = TypeIdentifier.ofType("com.sebastian_daschner.test.TestEnum");
-        Map<String, TypeIdentifier> properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
-        properties.put("hello", STRING_IDENTIFIER);
+        Map<String, TypeIdentifier> properties = new LinkedHashMap<>();
         properties.put("abc", STRING_IDENTIFIER);
         properties.put("enumeration", enumIdentifier);
+        properties.put("hello", STRING_IDENTIFIER);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation representation = TypeRepresentation.ofConcrete(identifier, properties);
         final TypeRepresentation enumRepresentation = TypeRepresentation.ofEnum(identifier, "FOO", "BAR", "BAZ");
 
@@ -126,11 +128,11 @@ public class JsonRepresentationAppenderTest {
     @Test
     public void testVisitConcreteWithNested() {
         final TypeIdentifier identifier = TypeIdentifier.ofType("com.sebastian_daschner.test.Model");
-        Map<String, TypeIdentifier> properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
-        properties.put("hello", STRING_IDENTIFIER);
+        Map<String, TypeIdentifier> properties = new LinkedHashMap<>();
         properties.put("abc", STRING_IDENTIFIER);
+        properties.put("hello", STRING_IDENTIFIER);
         properties.put("model", identifier);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation representation = TypeRepresentation.ofConcrete(identifier, properties);
 
         representations.put(identifier, representation);
@@ -144,27 +146,27 @@ public class JsonRepresentationAppenderTest {
         final TypeIdentifier modelIdentifier = TypeIdentifier.ofType("com.sebastian_daschner.test.Model");
         final TypeIdentifier objectIdentifier = TypeIdentifier.ofType(Types.OBJECT);
 
-        Map<String, TypeIdentifier> properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
+        Map<String, TypeIdentifier> properties = new LinkedHashMap<>();
         properties.put("abc", STRING_IDENTIFIER);
         properties.put("model", modelIdentifier);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation dateRepresentation = TypeRepresentation.ofConcrete(dateIdentifier, properties);
         representations.put(dateIdentifier, dateRepresentation);
 
-        properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
-        properties.put("hello", STRING_IDENTIFIER);
+        properties = new LinkedHashMap<>();
         properties.put("abc", STRING_IDENTIFIER);
+        properties.put("hello", STRING_IDENTIFIER);
         properties.put("model", modelIdentifier);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation objectRepresentation = TypeRepresentation.ofConcrete(objectIdentifier, properties);
         representations.put(objectIdentifier, objectRepresentation);
 
-        properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
-        properties.put("hello", STRING_IDENTIFIER);
+        properties = new LinkedHashMap<>();
         properties.put("abc", STRING_IDENTIFIER);
         properties.put("date", dateIdentifier);
+        properties.put("hello", STRING_IDENTIFIER);
         properties.put("object", objectIdentifier);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation modelRepresentation = TypeRepresentation.ofConcrete(modelIdentifier, properties);
         representations.put(modelIdentifier, modelRepresentation);
 
@@ -203,11 +205,11 @@ public class JsonRepresentationAppenderTest {
     public void testVisitRecursiveType() {
         final TypeIdentifier modelIdentifier = TypeIdentifier.ofType("com.sebastian_daschner.test.Model");
 
-        final Map<String, TypeIdentifier> properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
-        properties.put("hello", STRING_IDENTIFIER);
+        final Map<String, TypeIdentifier> properties = new LinkedHashMap<>();
         properties.put("abc", STRING_IDENTIFIER);
+        properties.put("hello", STRING_IDENTIFIER);
         properties.put("model", modelIdentifier);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation modelRepresentation = TypeRepresentation.ofConcrete(modelIdentifier, properties);
         representations.put(modelIdentifier, modelRepresentation);
 
@@ -225,13 +227,13 @@ public class JsonRepresentationAppenderTest {
         final TypeIdentifier firstModelIdentifier = TypeIdentifier.ofType("com.sebastian_daschner.test.first.Model");
         final TypeIdentifier secondModelIdentifier = TypeIdentifier.ofType("com.sebastian_daschner.test.second.Model");
 
-        Map<String, TypeIdentifier> properties = new HashMap<>();
-        properties.put("world", INT_IDENTIFIER);
+        Map<String, TypeIdentifier> properties = new LinkedHashMap<>();
         properties.put("model", secondModelIdentifier);
+        properties.put("world", INT_IDENTIFIER);
         final TypeRepresentation firstModelRepresentation = TypeRepresentation.ofConcrete(firstModelIdentifier, properties);
         representations.put(firstModelIdentifier, firstModelRepresentation);
 
-        properties = new HashMap<>();
+        properties = new LinkedHashMap<>();
         properties.put("hello", STRING_IDENTIFIER);
         properties.put("model", firstModelIdentifier);
         final TypeRepresentation secondModelRepresentation = TypeRepresentation.ofConcrete(secondModelIdentifier, properties);
