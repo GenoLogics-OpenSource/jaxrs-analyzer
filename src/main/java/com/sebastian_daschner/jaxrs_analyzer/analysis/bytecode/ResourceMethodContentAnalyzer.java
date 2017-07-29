@@ -26,6 +26,7 @@ import com.sebastian_daschner.jaxrs_analyzer.model.instructions.Instruction;
 import com.sebastian_daschner.jaxrs_analyzer.model.methods.ProjectMethod;
 import com.sebastian_daschner.jaxrs_analyzer.model.results.MethodResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -66,14 +67,12 @@ class ResourceMethodContentAnalyzer extends MethodContentAnalyzer {
             if (Types.PRIMITIVE_VOID.equals(returnType)) {
                 return;
             }
+            
+            // happens for abstract methods or if there is no return
+            boolean hasReturnElement = returnedElement != null;
 
-            if (returnedElement == null) {
-                // happens for abstract methods or if there is no return
-                return;
-            }
-
-            final Set<Object> possibleObjects = returnedElement.getPossibleValues().stream().filter(o -> !(o instanceof HttpResponse))
-                    .collect(Collectors.toSet());
+            final Set<Object> possibleObjects = hasReturnElement ? returnedElement.getPossibleValues().stream().filter(o -> !(o instanceof HttpResponse))
+                    .collect(Collectors.toSet()) : Collections.emptySet();
 
             // for non-Response methods add a default if there are non-Response objects or none objects at all
             if (!Types.RESPONSE.equals(returnType)) {
@@ -90,7 +89,8 @@ class ResourceMethodContentAnalyzer extends MethodContentAnalyzer {
             }
 
             // add Response results as well
-            returnedElement.getPossibleValues().stream().filter(o -> o instanceof HttpResponse).map(o -> (HttpResponse) o).forEach(methodResult.getResponses()::add);
+            if (hasReturnElement)
+                returnedElement.getPossibleValues().stream().filter(o -> o instanceof HttpResponse).map(o -> (HttpResponse) o).forEach(methodResult.getResponses()::add);
         } finally {
             lock.unlock();
         }

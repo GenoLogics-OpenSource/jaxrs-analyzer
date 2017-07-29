@@ -35,8 +35,7 @@ public class ProjectMethodClassVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-        // TODO allow abstract?
-        final boolean legalModifiers = (access & ACC_ABSTRACT | access & ACC_NATIVE) == 0;
+        final boolean legalModifiers = (access & ACC_NATIVE) == 0;
 
         final String methodSignature = identifier.getSignature();
         if (legalModifiers && identifier.getMethodName().equals(name) && (methodSignature.equals(desc) || methodSignature.equals(signature))) {
